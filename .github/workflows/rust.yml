@@ -113,7 +113,7 @@ jobs:
       with:
         toolchain: stable
     - name: install diesel_cli
-      run: cargo install diesel_cli --no-default-features --features mysql
+      run: cargo install diesel_cli --no-default-features --features mysql --features crypto_adaptor_openssl
     - name: init database
       run: diesel setup --database-url mysql://root:password@127.0.0.1:3306/vault
     - name: Build
