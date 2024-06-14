@@ -61,6 +61,7 @@ impl AES {
                     rand_priv_bytes(&mut buf2).unwrap();
                     aes_iv = buf2.to_vec();
                 },
+                AESKeySize::AES192 => todo!(),
                 AESKeySize::AES256 => {
                     // for aes-256, key is 32 bytes and iv is 16 bytes
                     let mut buf = [0; 32];
@@ -100,6 +101,22 @@ impl BlockCipher for AES {
             (AESKeySize::AES128, CipherMode::CBC) => {
                 let ciphertext = encrypt(
                     Cipher::aes_128_cbc(),
+                    &self.key,
+                    Some(&self.iv),
+                    plaintext).unwrap();
+                return Ok(ciphertext.to_vec());
+            }
+            (AESKeySize::AES192, CipherMode::CBC) => {
+                let ciphertext = encrypt(
+                    Cipher::aes_192_cbc(),
+                    &self.key,
+                    Some(&self.iv),
+                    plaintext).unwrap();
+                return Ok(ciphertext.to_vec());
+            }
+            (AESKeySize::AES256, CipherMode::CBC) => {
+                let ciphertext = encrypt(
+                    Cipher::aes_256_cbc(),
                     &self.key,
                     Some(&self.iv),
                     plaintext).unwrap();

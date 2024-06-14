@@ -62,6 +62,15 @@ impl AES {
                     rand_priv_bytes(&mut buf2).unwrap();
                     aes_iv = buf2.to_vec();
                 },
+                AESKeySize::AES192 => {
+                    // for aes-192, key is 24 bytes and iv is 16 bytes
+                    let mut buf = [0; 24];
+                    let mut buf2 = [0; 16];
+                    rand_priv_bytes(&mut buf).unwrap();
+                    aes_key = buf.to_vec();
+                    rand_priv_bytes(&mut buf2).unwrap();
+                    aes_iv = buf2.to_vec();
+                },
                 AESKeySize::AES256 => {
                     // for aes-256, key is 32 bytes and iv is 16 bytes
                     let mut buf = [0; 32];
@@ -97,30 +106,48 @@ impl AES {
 
 impl BlockCipher for AES {
     fn encrypt(&mut self, plaintext: &Vec<u8>) -> Result<Vec<u8>, RvError> {
+        let cipher;
+        let mut aead = false;
+
         match self.alg {
-            (AESKeySize::AES128, CipherMode::CBC) => {
-                let ciphertext = encrypt(
-                    Cipher::aes_128_cbc(),
-                    &self.key,
-                    Some(&self.iv),
-                    plaintext).unwrap();
-                return Ok(ciphertext.to_vec());
-            }
+            (AESKeySize::AES128, CipherMode::CBC) => cipher = Cipher::aes_128_cbc(),
+            (AESKeySize::AES192, CipherMode::CBC) => cipher = Cipher::aes_192_cbc(),
+            (AESKeySize::AES256, CipherMode::CBC) => cipher = Cipher::aes_256_cbc(),
             (AESKeySize::AES128, CipherMode::GCM) => {
-                // aes_128_gcm's tag is 16-bytes long.
-                let tag: &mut [u8] = &mut [0; 16];
-                let ciphertext = encrypt_aead(
-                    Cipher::aes_128_gcm(),
-                    &self.key,
-                    Some(&self.iv),
-                    &self.aad.clone().unwrap(),
-                    plaintext,
-                    tag
-                    ).unwrap();
-                self.tag = Some(tag.to_vec());
-                return Ok(ciphertext.to_vec());
-            }
-            _ => Err(RvError::ErrCryptoCipherOPNotSupported),
+                cipher = Cipher::aes_128_gcm();
+                aead = true;
+            },
+            (AESKeySize::AES192, CipherMode::GCM) => {
+                cipher = Cipher::aes_192_gcm();
+                aead = true;
+            },
+            (AESKeySize::AES256, CipherMode::GCM) => {
+                cipher = Cipher::aes_256_gcm();
+                aead = true;
+            },
+            _ => return Err(RvError::ErrCryptoCipherOPNotSupported),
+        }
+
+        if aead == false {
+            let ciphertext = encrypt(
+                cipher,
+                &self.key,
+                Some(&self.iv),
+                plaintext).unwrap();
+            return Ok(ciphertext.to_vec());
+        } else {
+            // aes_xxx_gcm's tag is at most 16-bytes long.
+            let tag: &mut [u8] = &mut [0; 16];
+            let ciphertext = encrypt_aead(
+                cipher,
+                &self.key,
+                Some(&self.iv),
+                &self.aad.clone().unwrap(),
+                plaintext,
+                tag
+            ).unwrap();
+            self.tag = Some(tag.to_vec());
+            return Ok(ciphertext.to_vec());
         }
     }
 

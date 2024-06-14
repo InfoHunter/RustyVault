@@ -74,7 +74,15 @@ pub enum CipherMode {
 /// This enum defines common AES key size constants.
 pub enum AESKeySize {
     AES128,
+    AES192,
     AES256,
+}
+
+/// This enum defines public key algorithm type constants.
+pub enum PublicKeyType {
+    RSA,
+    ECDSA,
+    SM2,
 }
 
 // All structs are defined here. Every struct represents a type of cryptography algorithm.
@@ -114,6 +122,8 @@ pub struct SM4 {
 /// ## One-shot encryption and decryption
 ///
 /// ~~~
+/// use rusty_vault::modules::crypto::{AES, AESKeySize, CipherMode, BlockCipher};
+///
 /// let data = b"The best way to not feel hopeless is to get up and do something.".to_vec();
 /// let key = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F".to_vec();
 /// let iv = b"\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07".to_vec();
@@ -130,6 +140,8 @@ pub struct SM4 {
 /// ## Stream encryption and decryption
 ///
 /// ~~~
+/// use rusty_vault::modules::crypto::{SM4, CipherMode, BlockCipher};
+///
 /// let data: [&[u8]; 2] = [b"The best way to not feel hopeless ",
 ///                         b"is to get up and do something."];
 /// let data2 = b"The best way to not feel hopeless is to get up and do something.";
@@ -180,6 +192,8 @@ pub struct SM4 {
 /// ## Use an auto-generated key
 ///
 /// ~~~
+/// use rusty_vault::modules::crypto::{AES, AESKeySize, CipherMode, BlockCipher};
+///
 /// let data = b"The best way to not feel hopeless is to get up and do something.".to_vec();
 /// let mut aes_encrypter = AES::new(true, Some(AESKeySize::AES128),
 ///     Some(CipherMode::CBC), None, None).unwrap();
@@ -243,6 +257,8 @@ pub trait BlockCipher {
 /// # One-shot encryption and decryption using AEAD cipher
 ///
 /// ~~~
+/// use rusty_vault::modules::crypto::{AES, AESKeySize, CipherMode, BlockCipher, AEADCipher};
+///
 /// let data = b"The best way to not feel hopeless is to get up and do something.".to_vec();
 /// let key = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F".to_vec();
 /// let iv = b"\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07".to_vec();
@@ -269,6 +285,8 @@ pub trait BlockCipher {
 /// # Stream encryption and decryption using AEAD cipher
 ///
 /// ~~~
+/// use rusty_vault::modules::crypto::{SM4, CipherMode, BlockCipher, AEADCipher};
+///
 /// let data: [&[u8]; 2] = [b"The best way to not feel hopeless ",
 ///                         b"is to get up and do something."];
 /// let data2 = b"The best way to not feel hopeless is to get up and do something.";
@@ -337,6 +355,41 @@ pub trait AEADCipher: BlockCipher {
     ///
     /// This function must be called before the `decrypt_final()` function.
     fn set_tag(&mut self, tag: Vec<u8>) -> Result<(), RvError>;
+}
+
+/// The PublicKey trait abstracts a common function set for public key algorithms. Public key
+/// algorithms usually refer to signature or encryption algorithms such as RSA, SM2 and so forth.
+pub trait PublicKey {
+    /// Generate a pair of public and private key, based on specific algorithm type.
+    fn keygen() -> Result<(), RvError>;
+}
+
+/// The Signature trait defines a signature algorithm, such as RSA, ECDSA or SM2.
+/// This trait is a sub-trait of PublicKey trait.
+pub trait Signature: PublicKey {
+    /// Sign a piece of data and returns the generated signature value.
+    ///
+    /// This operation uses the private key of a specific algorithm.
+    fn sign(&mut self, data: &Vec<u8>) -> Result<Vec<u8>, RvError>;
+
+    /// Verify a piece of data against a signature and returns the verification result.
+    ///
+    /// This operation uses the public key of a specific algorithm.
+    fn verify(&mut self, data: &Vec<u8>, sig: &Vec<u8>) -> Result<bool, RvError>;
+}
+
+/// The Encryption trait defines an public key encryption algorithm, such as RSA and SM4.
+/// This trait is a sub-trait of PublicKey trait.
+pub trait Encryption: PublicKey {
+    /// Encrypt a piece of data using the private key.
+    ///
+    /// The ciphertext is returned on success.
+    fn encrypt(&mut self, plaintext: &Vec<u8>) -> Result<Vec<u8>, RvError>;
+
+    /// Decrypt a piece of data using the public key.
+    ///
+    /// The plaintext is returned on success.
+    fn decrypt(&mut self, ciphertext: &Vec<u8>) -> Result<Vec<u8>, RvError>;
 }
 
 #[cfg(test)]
