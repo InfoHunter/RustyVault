@@ -139,7 +139,10 @@ pub struct SM4 {
 ///
 /// ## Stream encryption and decryption
 ///
-/// ~~~
+/// The following code works only with `crypto_adaptor_tongsuo`.
+///
+#[cfg_attr(feature = "crypto_adaptor_tongsuo", doc = "~~~")]
+#[cfg_attr(not(feature = "crypto_adaptor_tongsuo"), doc = "~~~ignore")]
 /// use rusty_vault::modules::crypto::{SM4, CipherMode, BlockCipher};
 ///
 /// let data: [&[u8]; 2] = [b"The best way to not feel hopeless ",
@@ -284,6 +287,10 @@ pub trait BlockCipher {
 ///
 /// # Stream encryption and decryption using AEAD cipher
 ///
+/// The following code works only with `crypto_adaptor_tongsuo`.
+///
+#[cfg_attr(feature = "crypto_adaptor_tongsuo", doc = "~~~")]
+#[cfg_attr(not(feature = "crypto_adaptor_tongsuo"), doc = "~~~ignore")]
 /// ~~~
 /// use rusty_vault::modules::crypto::{SM4, CipherMode, BlockCipher, AEADCipher};
 ///
@@ -394,7 +401,9 @@ pub trait Encryption: PublicKey {
 
 #[cfg(test)]
 mod crypto_test {
-    use crate::modules::crypto::{SM4, AES, AESKeySize, CipherMode, BlockCipher, AEADCipher};
+    use crate::modules::crypto::{AES, AESKeySize, CipherMode, BlockCipher, AEADCipher};
+    #[cfg(feature = "crypto_adaptor_tongsuo")]
+    use crate::modules::crypto::SM4;
 
     #[test]
     fn test_aes_keygen() {
